@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+
 contract ERC20 {
     address owner;
     bool ispause;
@@ -48,7 +49,7 @@ contract ERC20 {
         unchecked {
             balances[msg.sender] -= _value;
             balances[_to] += _value;
-        }// 오버플로우 검사x
+        }
         
         emit Transfer(msg.sender, _to, _value);
     }
@@ -101,14 +102,10 @@ contract ERC20 {
         ispause = !ispause;
     }
 
-    // EIP-2612 Permit Implementation
-    bytes32 private constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
     function permit(address _owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
         require(block.timestamp <= deadline, "PERMIT_DEADLINE_EXPIRED");
-
         bytes32 structHash = keccak256(abi.encode(
-            PERMIT_TYPEHASH,
+            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
             _owner,
             spender,
             value,
@@ -121,12 +118,12 @@ contract ERC20 {
         require(signer == _owner, "INVALID_SIGNER");
 
         _nonces[_owner] += 1;
-        _approve(_owner, spender, value);
+        allowances[_owner][spender] = value;
     }
 
     function _toTypedDataHash(bytes32 structHash) public view returns (bytes32) {
         return keccak256(abi.encodePacked(
-            "\x19\x01",
+            hex"1901",
             keccak256(abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(name)),
@@ -140,10 +137,5 @@ contract ERC20 {
 
     function nonces(address _owner) external view returns (uint256){
         return _nonces[_owner];
-    }
-
-    function _approve(address _owner, address spender, uint256 value) internal {
-        allowances[_owner][spender] = value;
-        emit Approval(_owner, spender, value);
     }
 }
